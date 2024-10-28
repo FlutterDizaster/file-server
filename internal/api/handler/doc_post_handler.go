@@ -1,4 +1,4 @@
-package api
+package handler
 
 import (
 	"log/slog"
@@ -6,27 +6,29 @@ import (
 	"strings"
 
 	"github.com/FlutterDizaster/file-server/internal/api/middlewares"
+	"github.com/FlutterDizaster/file-server/internal/apperrors"
 	"github.com/FlutterDizaster/file-server/internal/models"
 	"github.com/google/uuid"
 )
 
-func (a API) docPostHandler(w http.ResponseWriter, r *http.Request) {
+func (h Handler) docPostHandler(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middlewares.KeyUserID).(uuid.UUID)
 	if !ok {
 		slog.Error("User id not found in context")
-		responseWithError(w, r, nil, "User id not found")
+		h.responseWithError(w, r, nil, "User id not found")
 		return
 	}
 	// Check content-type
 	if !strings.Contains(r.Header.Get("Content-Type"), "multipart/form-data") {
-		responseWithError(w, r, nil, "Wrong content type")
+		err := apperrors.ErrInvalidContentType
+		h.responseWithError(w, r, err, r.Header.Get("Content-Type"))
 		return
 	}
 
 	// Parsing multipart form
-	err := r.ParseMultipartForm(a.maxUploadFileSize)
+	err := r.ParseMultipartForm(h.maxUploadFileSize)
 	if err != nil {
-		responseWithError(w, r, err, "Error while parsing multipart form")
+		h.responseWithError(w, r, err, "Error while parsing multipart form")
 		return
 	}
 
@@ -34,7 +36,7 @@ func (a API) docPostHandler(w http.ResponseWriter, r *http.Request) {
 	metaStr := r.FormValue("meta")
 	var metadata models.Metadata
 	if err = metadata.UnmarshalJSON([]byte(metaStr)); err != nil {
-		responseWithError(w, r, err, "Error while unmarshaling metadata")
+		h.responseWithError(w, r, err, "Error while unmarshaling metadata")
 		return
 	}
 
@@ -48,7 +50,7 @@ func (a API) docPostHandler(w http.ResponseWriter, r *http.Request) {
 	// Extract file
 	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
-		responseWithError(w, r, err, "Error while getting file")
+		h.responseWithError(w, r, err, "Error while getting file")
 		return
 	}
 	defer file.Close()
@@ -57,8 +59,8 @@ func (a API) docPostHandler(w http.ResponseWriter, r *http.Request) {
 	metadata.FileSize = fileHeader.Size
 
 	// Upload document
-	if err = a.documentsCtrl.UploadDocument(r.Context(), metadata, file); err != nil {
-		responseWithError(w, r, err, "Error while uploading document")
+	if err = h.documentsCtrl.UploadDocument(r.Context(), metadata, file); err != nil {
+		h.responseWithError(w, r, err, "Error while uploading document")
 		return
 	}
 
@@ -73,7 +75,7 @@ func (a API) docPostHandler(w http.ResponseWriter, r *http.Request) {
 	// Marshal response
 	respData, err := resp.MarshalJSON()
 	if err != nil {
-		responseWithError(w, r, err, "Error while marshaling response")
+		h.responseWithError(w, r, err, "Error while marshaling response")
 		return
 	}
 

@@ -1,4 +1,4 @@
-package api
+package handler
 
 import (
 	"io"
@@ -8,12 +8,13 @@ import (
 	"strings"
 
 	"github.com/FlutterDizaster/file-server/internal/api/middlewares"
+	"github.com/FlutterDizaster/file-server/internal/apperrors"
 	"github.com/FlutterDizaster/file-server/internal/models"
 	"github.com/google/uuid"
 )
 
-func (a *API) docGetListHandler(w http.ResponseWriter, r *http.Request) {
-	respData := a.prepareDocListResponse(w, r)
+func (h Handler) docGetListHandler(w http.ResponseWriter, r *http.Request) {
+	respData := h.prepareDocListResponse(w, r)
 	if respData == nil {
 		return
 	}
@@ -26,8 +27,8 @@ func (a *API) docGetListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *API) docGetListHeadHandler(w http.ResponseWriter, r *http.Request) {
-	respData := a.prepareDocListResponse(w, r)
+func (h Handler) docGetListHeadHandler(w http.ResponseWriter, r *http.Request) {
+	respData := h.prepareDocListResponse(w, r)
 	if respData == nil {
 		return
 	}
@@ -38,41 +39,42 @@ func (a *API) docGetListHeadHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (a API) prepareDocListResponse(
+func (h Handler) prepareDocListResponse(
 	w http.ResponseWriter,
 	r *http.Request,
 ) []byte {
 	userID, ok := r.Context().Value(middlewares.KeyUserID).(uuid.UUID)
 	if !ok {
 		slog.Error("User id not found in context")
-		responseWithError(w, r, nil, "User id not found")
+		h.responseWithError(w, r, nil, "User id not found")
 		return nil
 	}
 
 	// Check content type
 	if !strings.Contains(r.Header.Get("Content-Type"), "application/json") {
-		responseWithError(w, r, nil, "Invalid content type")
+		err := apperrors.ErrInvalidContentType
+		h.responseWithError(w, r, err, r.Header.Get("Content-Type"))
 		return nil
 	}
 
 	// Reading body
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		responseWithError(w, r, err, "Error while reading body")
+		h.responseWithError(w, r, err, "Error while reading body")
 		return nil
 	}
 	defer r.Body.Close()
 
 	var filesListReq models.FilesListRequest
 	if err = filesListReq.UnmarshalJSON(body); err != nil {
-		responseWithError(w, r, err, "Error while unmarshaling body")
+		h.responseWithError(w, r, err, "Error while unmarshaling body")
 		return nil
 	}
 
 	// Execute method
-	files, err := a.documentsCtrl.GetFilesInfo(r.Context(), userID, filesListReq)
+	files, err := h.documentsCtrl.GetFilesInfo(r.Context(), userID, filesListReq)
 	if err != nil {
-		responseWithError(w, r, err, "Error while getting files list")
+		h.responseWithError(w, r, err, "Error while getting files list")
 		return nil
 	}
 
@@ -86,7 +88,7 @@ func (a API) prepareDocListResponse(
 	// Marshalling response
 	respData, err := resp.MarshalJSON()
 	if err != nil {
-		responseWithError(w, r, err, "Error while marshaling response")
+		h.responseWithError(w, r, err, "Error while marshaling response")
 		return nil
 	}
 

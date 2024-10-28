@@ -34,6 +34,20 @@ var (
 		Code:    http.StatusBadRequest,
 		Message: "wrong filter options",
 	}
+
+	// HTTP errors.
+	ErrInvalidContentType = Error{
+		Code:    http.StatusBadRequest,
+		Message: "invalid content type",
+	}
+	ErrAuthorizationHeaderNotFound = Error{
+		Code:    http.StatusUnauthorized,
+		Message: "authorization header not found",
+	}
+	ErrInvalidToken = Error{
+		Code:    http.StatusUnauthorized,
+		Message: "invalid token",
+	}
 )
 
 type Error struct {

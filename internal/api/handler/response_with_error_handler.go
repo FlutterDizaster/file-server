@@ -1,6 +1,7 @@
-package api
+package handler
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -9,20 +10,18 @@ import (
 	"github.com/FlutterDizaster/file-server/internal/models"
 )
 
-func responseWithError(w http.ResponseWriter, r *http.Request, err error, msg string) {
+func (h Handler) responseWithError(w http.ResponseWriter, r *http.Request, err error, msg string) {
 	resp := &models.Response{
 		Error: &models.ResponseError{
 			Text: msg,
 		},
 	}
+	var appserror *apperrors.Error
 
-	switch e := err.(type) {
-	case *apperrors.Error:
-		resp.Error.Code = e.Code
-		resp.Error.Text = fmt.Sprintf("%s: %s", msg, e.Message)
-	case nil:
-		resp.Error.Code = http.StatusBadRequest
-		resp.Error.Text = msg
+	switch {
+	case errors.As(err, &appserror):
+		resp.Error.Code = appserror.Code
+		resp.Error.Text = fmt.Sprintf("%s: %s", msg, appserror.Message)
 	default:
 		slog.Error(
 			"Error while processing request",
@@ -41,8 +40,8 @@ func responseWithError(w http.ResponseWriter, r *http.Request, err error, msg st
 		return
 	}
 
-	w.WriteHeader(resp.Error.Code)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(resp.Error.Code)
 
 	if _, err = w.Write(respData); err != nil {
 		slog.Error("Error while writing response", slog.Any("err", err))

@@ -2,9 +2,11 @@ package middlewares
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 
+	"github.com/FlutterDizaster/file-server/internal/apperrors"
 	jwtresolver "github.com/FlutterDizaster/file-server/internal/jwt-resolver"
 	"github.com/FlutterDizaster/file-server/internal/models"
 )
@@ -25,60 +27,63 @@ type Auth struct {
 // Handle method handles incoming requests.
 func (a *Auth) Handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var respErr *models.ResponseError
-
 		// Try to get token from Authorization header
 		token := r.Header.Get("Authorization")
 
 		// If token not found, return error
 		// Otherwise, try to decode it
 		if token == "" {
-			respErr = &models.ResponseError{
-				Code: http.StatusUnauthorized,
-				Text: "Authorization header not found",
-			}
-		} else {
-			// Try to decode token
-			claims, err := a.Resolver.DecryptToken(token)
-			if err != nil {
-				respErr = &models.ResponseError{
-					Code: http.StatusUnauthorized,
-					Text: err.Error(),
-				}
-			} else {
-				// Add user ID to context
-				ctx := context.WithValue(r.Context(), KeyUserID, claims.UserID)
-				r = r.WithContext(ctx)
-			}
+			a.responseWithError(w, r, apperrors.ErrAuthorizationHeaderNotFound)
+			return
 		}
 
-		// If error occured, return it
-		// Otherwise, return next handler
-		if respErr != nil {
-			slog.Info("Failed to authorize request", slog.Any("err", respErr.Text))
-
-			w.WriteHeader(respErr.Code)
-			w.Header().Set("Content-Type", "application/json")
-
-			// Create response
-			resp := &models.Response{
-				Error: respErr,
-			}
-
-			// Marshal response
-			respData, err := resp.MarshalJSON()
-			if err != nil {
-				slog.Error("Error while creating response", slog.Any("err", err))
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			// Write response
-			if _, err = w.Write(respData); err != nil {
-				slog.Error("Error while writing response", slog.Any("err", err))
-			}
-		} else {
-			next.ServeHTTP(w, r)
+		// Try to decode token
+		claims, err := a.Resolver.DecryptToken(token)
+		if err != nil {
+			a.responseWithError(w, r, apperrors.ErrInvalidToken)
+			return
 		}
+
+		// Add user ID to context
+		ctx := context.WithValue(r.Context(), KeyUserID, claims.UserID)
+		r = r.WithContext(ctx)
+
+		next.ServeHTTP(w, r)
 	})
+}
+
+func (a Auth) responseWithError(w http.ResponseWriter, r *http.Request, err error) {
+	resp := &models.Response{
+		Error: &models.ResponseError{},
+	}
+	var appserror *apperrors.Error
+
+	switch {
+	case errors.As(err, &appserror):
+		resp.Error.Code = appserror.Code
+		resp.Error.Text = appserror.Message
+	default:
+		slog.Error(
+			"Error while processing request",
+			slog.String("Method", r.Method),
+			slog.String("URL", r.URL.String()),
+			slog.Any("err", err),
+		)
+		resp.Error.Code = http.StatusInternalServerError
+		resp.Error.Text = err.Error()
+	}
+
+	respData, err := resp.MarshalJSON()
+	if err != nil {
+		slog.Error("Error while marshaling response", slog.Any("err", err))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(resp.Error.Code)
+
+	if _, err = w.Write(respData); err != nil {
+		slog.Error("Error while writing response", slog.Any("err", err))
+		return
+	}
 }
