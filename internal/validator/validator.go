@@ -37,8 +37,8 @@ func (v *Validator) validateToken(token string) error {
 }
 
 func (v *Validator) validateLogin(login string) error {
-	err := apperrors.ErrWrongCredentials
 	if len(login) < minLength {
+		err := apperrors.ErrWrongCredentials
 		err.Message = fmt.Sprintf("login must be at least %d characters long", minLength)
 		return err
 	}
@@ -47,6 +47,7 @@ func (v *Validator) validateLogin(login string) error {
 
 	for _, c := range login {
 		if !strings.ContainsRune(alphabet, c) {
+			err := apperrors.ErrWrongCredentials
 			err.Message = fmt.Sprintf(
 				"login must contain only letters and digits. Invalid character: %s",
 				string(c),
