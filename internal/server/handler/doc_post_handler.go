@@ -1,13 +1,15 @@
 package handler
 
 import (
+	"io"
 	"log/slog"
+	"mime/multipart"
 	"net/http"
 	"strings"
 
-	"github.com/FlutterDizaster/file-server/internal/api/middlewares"
 	"github.com/FlutterDizaster/file-server/internal/apperrors"
 	"github.com/FlutterDizaster/file-server/internal/models"
+	"github.com/FlutterDizaster/file-server/internal/server/middlewares"
 	"github.com/google/uuid"
 )
 
@@ -48,15 +50,19 @@ func (h Handler) docPostHandler(w http.ResponseWriter, r *http.Request) {
 	metadata.JSON = models.JSONString(jsonStr)
 
 	// Extract file
-	file, fileHeader, err := r.FormFile("file")
-	if err != nil {
-		h.responseWithError(w, r, err, "Error while getting file")
-		return
-	}
-	defer file.Close()
+	var file io.ReadCloser
+	if metadata.File {
+		var fileHeader *multipart.FileHeader
+		file, fileHeader, err = r.FormFile("file")
+		if err != nil {
+			h.responseWithError(w, r, err, "Error while getting file")
+			return
+		}
+		defer file.Close()
 
-	// Set file size
-	metadata.FileSize = fileHeader.Size
+		// Set file size
+		metadata.FileSize = fileHeader.Size
+	}
 
 	// Upload document
 	if err = h.documentsCtrl.UploadDocument(r.Context(), metadata, file); err != nil {

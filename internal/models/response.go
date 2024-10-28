@@ -24,19 +24,3 @@ type ResponseError struct {
 	Code int    `json:"code"`
 	Text string `json:"text"`
 }
-
-func NewErrorResponseJSON(code int, text string) ([]byte, error) {
-	resp := &Response{
-		Error: &ResponseError{
-			Code: code,
-			Text: text,
-		},
-	}
-
-	respData, err := resp.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-
-	return respData, nil
-}

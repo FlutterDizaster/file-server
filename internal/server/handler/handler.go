@@ -5,9 +5,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/FlutterDizaster/file-server/internal/api/middlewares"
 	jwtresolver "github.com/FlutterDizaster/file-server/internal/jwt-resolver"
 	"github.com/FlutterDizaster/file-server/internal/models"
+	"github.com/FlutterDizaster/file-server/internal/server/middlewares"
 	"github.com/google/uuid"
 )
 

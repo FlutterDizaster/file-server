@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/FlutterDizaster/file-server/internal/api/middlewares"
 	"github.com/FlutterDizaster/file-server/internal/apperrors"
 	"github.com/FlutterDizaster/file-server/internal/models"
+	"github.com/FlutterDizaster/file-server/internal/server/middlewares"
 	"github.com/google/uuid"
 )
 

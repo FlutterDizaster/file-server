@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/FlutterDizaster/file-server/internal/api/middlewares"
 	"github.com/FlutterDizaster/file-server/internal/models"
+	"github.com/FlutterDizaster/file-server/internal/server/middlewares"
 	"github.com/google/uuid"
 )
 
@@ -73,10 +73,12 @@ func (h Handler) docGetHeadHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 		w.Header().Set("Content-Disposition", "attachment; filename="+info.Name)
 		w.Header().Set("Content-Lenght", strconv.FormatInt(info.FileSize, 10))
-	} else {
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Content-Lenght", strconv.Itoa(len(info.JSON)))
+		w.WriteHeader(http.StatusOK)
+		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Lenght", strconv.Itoa(len(info.JSON)))
 
 	w.WriteHeader(http.StatusOK)
 }
