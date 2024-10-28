@@ -1,19 +1,39 @@
 package apperrors
 
 import (
-	"errors"
+	"net/http"
 )
 
 var (
 	// User management errors.
-	ErrUserAlreadyExists = errors.New("user already exists")
-	ErrWrongCredentials  = errors.New("wrong credentials")
+	ErrUserAlreadyExists = Error{
+		Code:    http.StatusConflict,
+		Message: "user already exists",
+	}
+	ErrWrongCredentials = Error{
+		Code:    http.StatusUnauthorized,
+		Message: "wrong credentials",
+	}
+
+	// General.
+	ErrAccessDenied = Error{
+		Code:    http.StatusForbidden,
+		Message: "access denied",
+	}
+	ErrNotFound = Error{
+		Code:    http.StatusNotFound,
+		Message: "not found",
+	}
 
 	// Documents management errors.
-	ErrWrongMetadata      = errors.New("wrong metadata")
-	ErrWrongFilterOptions = errors.New("wrong filter options")
-	ErrAccessDenied       = errors.New("access denied")
-	ErrNotFound           = errors.New("not found")
+	ErrWrongMetadata = Error{
+		Code:    http.StatusBadRequest,
+		Message: "wrong metadata",
+	}
+	ErrWrongFilterOptions = Error{
+		Code:    http.StatusBadRequest,
+		Message: "wrong filter options",
+	}
 )
 
 type Error struct {
@@ -23,4 +43,11 @@ type Error struct {
 
 func (e Error) Error() string {
 	return e.Message
+}
+
+func NewBadCredentialError(message string) Error {
+	return Error{
+		Code:    http.StatusUnauthorized,
+		Message: message,
+	}
 }
