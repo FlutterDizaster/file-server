@@ -89,7 +89,7 @@ func (h Handler) serveBinaryFileHandler(
 	meta models.Metadata,
 ) {
 	// Get file
-	file, err := h.documentsCtrl.GetFile(r.Context(), *meta.ID)
+	file, err := h.documentsCtrl.GetFile(r.Context(), meta)
 	if err != nil {
 		h.responseWithError(w, r, err, "Error while getting file")
 		return

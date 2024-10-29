@@ -88,36 +88,30 @@ func easyjsonBa0ee0e3DecodeGithubComFlutterDizasterFileServerInternalModels(in *
 				in.Skip()
 				out.Grant = nil
 			} else {
+				in.Delim('[')
 				if out.Grant == nil {
-					out.Grant = new(uuid.UUIDs)
-				}
-				if in.IsNull() {
-					in.Skip()
-					*out.Grant = nil
-				} else {
-					in.Delim('[')
-					if *out.Grant == nil {
-						if !in.IsDelim(']') {
-							*out.Grant = make(uuid.UUIDs, 0, 4)
-						} else {
-							*out.Grant = uuid.UUIDs{}
-						}
+					if !in.IsDelim(']') {
+						out.Grant = make([]string, 0, 4)
 					} else {
-						*out.Grant = (*out.Grant)[:0]
+						out.Grant = []string{}
 					}
-					for !in.IsDelim(']') {
-						var v1 uuid.UUID
-						if data := in.UnsafeBytes(); in.Ok() {
-							in.AddError((v1).UnmarshalText(data))
-						}
-						*out.Grant = append(*out.Grant, v1)
-						in.WantComma()
-					}
-					in.Delim(']')
+				} else {
+					out.Grant = (out.Grant)[:0]
 				}
+				for !in.IsDelim(']') {
+					var v1 string
+					v1 = string(in.String())
+					out.Grant = append(out.Grant, v1)
+					in.WantComma()
+				}
+				in.Delim(']')
 			}
 		case "json":
 			(out.JSON).UnmarshalEasyJSON(in)
+		case "file-size":
+			out.FileSize = int64(in.Int64())
+		case "url":
+			out.URL = string(in.String())
 		default:
 			in.SkipRecursive()
 		}
@@ -198,7 +192,7 @@ func easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels(out 
 		}
 		out.RawText((*in.OwnerID).MarshalText())
 	}
-	if in.Grant != nil {
+	if len(in.Grant) != 0 {
 		const prefix string = ",\"grant\":"
 		if first {
 			first = false
@@ -206,15 +200,13 @@ func easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels(out 
 		} else {
 			out.RawString(prefix)
 		}
-		if *in.Grant == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
-			out.RawString("null")
-		} else {
+		{
 			out.RawByte('[')
-			for v2, v3 := range *in.Grant {
+			for v2, v3 := range in.Grant {
 				if v2 > 0 {
 					out.RawByte(',')
 				}
-				out.RawText((v3).MarshalText())
+				out.String(string(v3))
 			}
 			out.RawByte(']')
 		}
@@ -228,6 +220,26 @@ func easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels(out 
 			out.RawString(prefix)
 		}
 		(in.JSON).MarshalEasyJSON(out)
+	}
+	if in.FileSize != 0 {
+		const prefix string = ",\"file-size\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.Int64(int64(in.FileSize))
+	}
+	if in.URL != "" {
+		const prefix string = ",\"url\":"
+		if first {
+			first = false
+			out.RawString(prefix[1:])
+		} else {
+			out.RawString(prefix)
+		}
+		out.String(string(in.URL))
 	}
 	out.RawByte('}')
 }

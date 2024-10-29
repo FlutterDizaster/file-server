@@ -34,6 +34,14 @@ var (
 		Code:    http.StatusBadRequest,
 		Message: "wrong filter options",
 	}
+	ErrUnknownFilter = Error{
+		Code:    http.StatusBadRequest,
+		Message: "unknown filter name",
+	}
+	ErrInvalidFilterValue = Error{
+		Code:    http.StatusBadRequest,
+		Message: "invalid filter value",
+	}
 
 	// HTTP errors.
 	ErrInvalidContentType = Error{
