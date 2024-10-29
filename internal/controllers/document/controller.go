@@ -2,6 +2,7 @@ package docctrl
 
 import (
 	"context"
+	"errors"
 	"io"
 
 	"github.com/FlutterDizaster/file-server/internal/apperrors"
@@ -102,7 +103,8 @@ func (c *DocumentsController) GetFilesInfo(
 
 	// Try to get data from cache
 	metadata, err := c.cache.GetUserCache(ctx, userID)
-	if err != nil {
+	switch {
+	case errors.Is(err, apperrors.ErrNotFound):
 		// If cache is empty then get data from repository
 		metadata, err = c.metaRepo.GetMetadataByUserID(ctx, id)
 		if err != nil {
@@ -114,6 +116,8 @@ func (c *DocumentsController) GetFilesInfo(
 		if err != nil {
 			return nil, err
 		}
+	case err != nil:
+		return nil, err
 	}
 
 	// Create filter
@@ -135,19 +139,22 @@ func (c *DocumentsController) GetFileInfo(
 	docID, userID uuid.UUID,
 ) (models.Metadata, error) {
 	// Try to get metadata from cache
-	meta, err := c.cache.GetUserCache(ctx, userID)
-	if err != nil {
-		// If cache is empty then get metadata from repository
-		meta, err = c.metaRepo.GetMetadataByUserID(ctx, userID)
+	metadata, err := c.cache.GetUserCache(ctx, userID)
+	switch {
+	case errors.Is(err, apperrors.ErrNotFound):
+		// If cache is empty then get data from repository
+		metadata, err = c.metaRepo.GetMetadataByUserID(ctx, userID)
 		if err != nil {
 			return models.Metadata{}, err
 		}
 
-		// Save metadata to cache
-		err = c.cache.SaveUserCache(ctx, userID, meta)
+		// Save data to cache
+		err = c.cache.SaveUserCache(ctx, userID, metadata)
 		if err != nil {
 			return models.Metadata{}, err
 		}
+	case err != nil:
+		return models.Metadata{}, err
 	}
 
 	// Create filter
@@ -158,11 +165,11 @@ func (c *DocumentsController) GetFileInfo(
 	}
 
 	// Filter metadata
-	meta = filter.FilterData(meta)
+	metadata = filter.FilterData(metadata)
 
 	// Return filtered data
-	if len(meta) > 0 {
-		return meta[0], nil
+	if len(metadata) > 0 {
+		return metadata[0], nil
 	}
 
 	return models.Metadata{}, apperrors.ErrNotFound

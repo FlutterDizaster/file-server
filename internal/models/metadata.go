@@ -4,6 +4,9 @@ import (
 	"github.com/google/uuid"
 )
 
+//easyjson:json
+type Metadatas []Metadata
+
 //go:generate easyjson -all -omit_empty metadata.go
 type Metadata struct {
 	ID       *uuid.UUID `json:"id"`

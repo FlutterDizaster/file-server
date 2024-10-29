@@ -19,7 +19,73 @@ var (
 	_ easyjson.Marshaler
 )
 
-func easyjsonBa0ee0e3DecodeGithubComFlutterDizasterFileServerInternalModels(in *jlexer.Lexer, out *Metadata) {
+func easyjsonBa0ee0e3DecodeGithubComFlutterDizasterFileServerInternalModels(in *jlexer.Lexer, out *Metadatas) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		in.Skip()
+		*out = nil
+	} else {
+		in.Delim('[')
+		if *out == nil {
+			if !in.IsDelim(']') {
+				*out = make(Metadatas, 0, 0)
+			} else {
+				*out = Metadatas{}
+			}
+		} else {
+			*out = (*out)[:0]
+		}
+		for !in.IsDelim(']') {
+			var v1 Metadata
+			(v1).UnmarshalEasyJSON(in)
+			*out = append(*out, v1)
+			in.WantComma()
+		}
+		in.Delim(']')
+	}
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels(out *jwriter.Writer, in Metadatas) {
+	if in == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+		out.RawString("null")
+	} else {
+		out.RawByte('[')
+		for v2, v3 := range in {
+			if v2 > 0 {
+				out.RawByte(',')
+			}
+			(v3).MarshalEasyJSON(out)
+		}
+		out.RawByte(']')
+	}
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v Metadatas) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v Metadatas) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *Metadatas) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjsonBa0ee0e3DecodeGithubComFlutterDizasterFileServerInternalModels(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *Metadatas) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjsonBa0ee0e3DecodeGithubComFlutterDizasterFileServerInternalModels(l, v)
+}
+func easyjsonBa0ee0e3DecodeGithubComFlutterDizasterFileServerInternalModels1(in *jlexer.Lexer, out *Metadata) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -88,9 +154,9 @@ func easyjsonBa0ee0e3DecodeGithubComFlutterDizasterFileServerInternalModels(in *
 					out.Grant = (out.Grant)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v1 string
-					v1 = string(in.String())
-					out.Grant = append(out.Grant, v1)
+					var v4 string
+					v4 = string(in.String())
+					out.Grant = append(out.Grant, v4)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -111,7 +177,7 @@ func easyjsonBa0ee0e3DecodeGithubComFlutterDizasterFileServerInternalModels(in *
 		in.Consumed()
 	}
 }
-func easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels(out *jwriter.Writer, in Metadata) {
+func easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels1(out *jwriter.Writer, in Metadata) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -191,11 +257,11 @@ func easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels(out 
 		}
 		{
 			out.RawByte('[')
-			for v2, v3 := range in.Grant {
-				if v2 > 0 {
+			for v5, v6 := range in.Grant {
+				if v5 > 0 {
 					out.RawByte(',')
 				}
-				out.String(string(v3))
+				out.String(string(v6))
 			}
 			out.RawByte(']')
 		}
@@ -236,23 +302,23 @@ func easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels(out 
 // MarshalJSON supports json.Marshaler interface
 func (v Metadata) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels(&w, v)
+	easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels1(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Metadata) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels(w, v)
+	easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels1(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Metadata) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjsonBa0ee0e3DecodeGithubComFlutterDizasterFileServerInternalModels(&r, v)
+	easyjsonBa0ee0e3DecodeGithubComFlutterDizasterFileServerInternalModels1(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Metadata) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjsonBa0ee0e3DecodeGithubComFlutterDizasterFileServerInternalModels(l, v)
+	easyjsonBa0ee0e3DecodeGithubComFlutterDizasterFileServerInternalModels1(l, v)
 }
