@@ -4,7 +4,6 @@ package models
 
 import (
 	json "encoding/json"
-	time "time"
 
 	uuid "github.com/google/uuid"
 	easyjson "github.com/mailru/easyjson"
@@ -60,17 +59,7 @@ func easyjsonBa0ee0e3DecodeGithubComFlutterDizasterFileServerInternalModels(in *
 		case "mime":
 			out.Mime = string(in.String())
 		case "created":
-			if in.IsNull() {
-				in.Skip()
-				out.Created = nil
-			} else {
-				if out.Created == nil {
-					out.Created = new(time.Time)
-				}
-				if data := in.Raw(); in.Ok() {
-					in.AddError((*out.Created).UnmarshalJSON(data))
-				}
-			}
+			out.Created = string(in.String())
 		case "owner_id":
 			if in.IsNull() {
 				in.Skip()
@@ -172,7 +161,7 @@ func easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels(out 
 		}
 		out.String(string(in.Mime))
 	}
-	if in.Created != nil {
+	if in.Created != "" {
 		const prefix string = ",\"created\":"
 		if first {
 			first = false
@@ -180,7 +169,7 @@ func easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels(out 
 		} else {
 			out.RawString(prefix)
 		}
-		out.Raw((*in.Created).MarshalJSON())
+		out.String(string(in.Created))
 	}
 	if in.OwnerID != nil {
 		const prefix string = ",\"owner_id\":"

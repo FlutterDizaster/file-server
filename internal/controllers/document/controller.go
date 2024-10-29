@@ -18,7 +18,7 @@ type FileRepository interface {
 type MetadataRepository interface {
 	UploadMetadata(ctx context.Context, meta models.Metadata) error
 	GetMetadataByUserID(ctx context.Context, userID uuid.UUID) ([]models.Metadata, error)
-	DeleteMetadata(ctx context.Context, id uuid.UUID) error
+	DeleteMetadata(ctx context.Context, id, userID uuid.UUID) error
 }
 
 type UserRepository interface {
@@ -182,7 +182,7 @@ func (c *DocumentsController) DeleteFile(ctx context.Context, id, userID uuid.UU
 	}
 
 	// Delete metadata from repository
-	err := c.metaRepo.DeleteMetadata(ctx, id)
+	err := c.metaRepo.DeleteMetadata(ctx, id, userID)
 	if err != nil {
 		return err
 	}

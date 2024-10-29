@@ -1,8 +1,6 @@
 package models
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 )
 
@@ -13,7 +11,7 @@ type Metadata struct {
 	File     bool       `json:"file"`
 	Public   bool       `json:"public"`
 	Mime     string     `json:"mime"`
-	Created  *time.Time `json:"created"`
+	Created  string     `json:"created"`
 	OwnerID  *uuid.UUID `json:"owner_id"`
 	Grant    []string   `json:"grant"`
 	JSON     JSONString `json:"json"`

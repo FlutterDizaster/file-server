@@ -35,15 +35,20 @@ func NewDateFilter(value string) (Filter, error) {
 }
 
 func (f *DateFilter) Apply(data models.Metadata) bool {
+	date, err := time.Parse(time.DateTime, data.Created)
+	if err != nil {
+		return false
+	}
+
 	switch f.mode {
 	case dateFilterModeAfter:
-		return data.Created.After(f.date)
+		return date.After(f.date)
 	case dateFilterModeBefore:
-		return data.Created.Before(f.date)
+		return date.Before(f.date)
 	case dateFilterModeEqual:
-		return data.Created.Equal(f.date)
+		return date.Equal(f.date)
 	case dateFilterModeBetween:
-		return data.Created.After(f.date) && data.Created.Before(f.endDate)
+		return date.After(f.date) && date.Before(f.endDate)
 	}
 	return false
 }
