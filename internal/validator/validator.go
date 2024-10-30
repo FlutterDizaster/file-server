@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -21,10 +22,14 @@ type Validator struct {
 	adminToken string
 }
 
-func New(token string) *Validator {
+func New(token string) (*Validator, error) {
+	if token == "" {
+		return nil, errors.New("empty admin token")
+	}
+
 	return &Validator{
 		adminToken: token,
-	}
+	}, nil
 }
 
 func (v *Validator) validateToken(token string) error {

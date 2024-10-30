@@ -21,25 +21,22 @@ type UserRepository interface {
 }
 
 type Settings struct {
-	AdminToken string
-	UserRepo   UserRepository
-	Resolver   *jwtresolver.JWTResolver
-	Validator  *validator.Validator
+	UserRepo  UserRepository
+	Resolver  *jwtresolver.JWTResolver
+	Validator *validator.Validator
 }
 
 type UserController struct {
-	adminToken string
-	userRepo   UserRepository
-	resolver   *jwtresolver.JWTResolver
-	validator  *validator.Validator
+	userRepo  UserRepository
+	resolver  *jwtresolver.JWTResolver
+	validator *validator.Validator
 }
 
 func New(settings Settings) *UserController {
 	ctrl := &UserController{
-		adminToken: settings.AdminToken,
-		userRepo:   settings.UserRepo,
-		resolver:   settings.Resolver,
-		validator:  settings.Validator,
+		userRepo:  settings.UserRepo,
+		resolver:  settings.Resolver,
+		validator: settings.Validator,
 	}
 
 	return ctrl
