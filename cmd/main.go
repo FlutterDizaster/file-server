@@ -15,7 +15,10 @@ func main() {
 }
 
 func mainWithCode() int {
-	// TODO: init slog
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, opts)))
 
 	// Gracefull shutdown with SIGINT and SIGTERM
 	ctx, cancel := signal.NotifyContext(
