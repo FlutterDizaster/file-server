@@ -30,7 +30,7 @@ type DocumentsController interface {
 		filesListRequest models.FilesListRequest,
 	) ([]models.Metadata, error)
 	GetFileInfo(ctx context.Context, id, userID uuid.UUID) (models.Metadata, error)
-	GetFile(Ctx context.Context, meta models.Metadata) (io.ReadSeeker, error)
+	GetFile(Ctx context.Context, meta models.Metadata) (io.ReadSeekCloser, error)
 	DeleteFile(ctx context.Context, id, userID uuid.UUID) error
 }
 

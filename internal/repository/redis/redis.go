@@ -52,14 +52,14 @@ func New(ctx context.Context, settings Settings) (*RedisRepository, error) {
 	return repo, nil
 }
 
-func (r *RedisRepository) InvalidateUserCache(ctx context.Context, id uuid.UUID) error {
+func (r RedisRepository) InvalidateUserCache(ctx context.Context, id uuid.UUID) error {
 	key := casheKey + id.String()
 
 	// Delete data from cache
 	return r.client.Del(ctx, key).Err()
 }
 
-func (r *RedisRepository) SaveUserCache(
+func (r RedisRepository) SaveUserCache(
 	ctx context.Context,
 	id uuid.UUID,
 	meta []models.Metadata,
@@ -76,7 +76,7 @@ func (r *RedisRepository) SaveUserCache(
 	return r.client.Set(ctx, key, string(data), r.ttl).Err()
 }
 
-func (r *RedisRepository) GetUserCache(
+func (r RedisRepository) GetUserCache(
 	ctx context.Context,
 	id uuid.UUID,
 ) ([]models.Metadata, error) {

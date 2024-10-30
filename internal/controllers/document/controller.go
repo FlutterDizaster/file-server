@@ -12,8 +12,9 @@ import (
 )
 
 type FileRepository interface {
-	UploadFile(ctx context.Context, file io.Reader) (string, error)
-	DownloadFile(ctx context.Context, url string) (io.ReadSeeker, error)
+	UploadFile(ctx context.Context, file io.Reader, fileSize int64) error
+	GetFile(ctx context.Context, meta models.Metadata) (io.ReadSeekCloser, error)
+	DeleteFile(ctx context.Context, id string) error
 }
 
 type MetadataRepository interface {
@@ -70,11 +71,10 @@ func (c *DocumentsController) UploadDocument(
 	// If file is binary then upload it to repository
 	if meta.File {
 		// Upload file to repository
-		url, err := c.fileRepo.UploadFile(ctx, file)
+		err := c.fileRepo.UploadFile(ctx, file, meta.FileSize)
 		if err != nil {
 			return err
 		}
-		meta.URL = url
 	}
 
 	// Save metadata to repository
@@ -178,8 +178,8 @@ func (c *DocumentsController) GetFileInfo(
 func (c *DocumentsController) GetFile(
 	ctx context.Context,
 	meta models.Metadata,
-) (io.ReadSeeker, error) {
-	return c.fileRepo.DownloadFile(ctx, meta.URL)
+) (io.ReadSeekCloser, error) {
+	return c.fileRepo.GetFile(ctx, meta)
 }
 
 func (c *DocumentsController) DeleteFile(ctx context.Context, id, userID uuid.UUID) error {
@@ -188,8 +188,14 @@ func (c *DocumentsController) DeleteFile(ctx context.Context, id, userID uuid.UU
 		return err
 	}
 
+	// Delete file from repository
+	err := c.fileRepo.DeleteFile(ctx, id.String())
+	if err != nil {
+		return err
+	}
+
 	// Delete metadata from repository
-	err := c.metaRepo.DeleteMetadata(ctx, id, userID)
+	err = c.metaRepo.DeleteMetadata(ctx, id, userID)
 	if err != nil {
 		return err
 	}

@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS metadata (
     owner_id UUID NOT NULL,
     json_data JSON NOT NULL,
     file_size BIGINT,
-    url TEXT,
     FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

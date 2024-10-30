@@ -7,8 +7,8 @@ const (
 
 	// Metadata management queries.
 	queryUploadMetadata = `INSERT INTO metadata 
-(name, is_file, public, mime, owner_id, json_data, file_size, url) 
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
+(name, is_file, public, mime, owner_id, json_data, file_size) 
+VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`
 	queryGetUsersMetadata = `SELECT 
     m.id,
     m.name,
@@ -19,7 +19,6 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
     m.owner_id,
     m.json_data,
     m.file_size,
-    m.url,
     COALESCE(string_agg(u.username, ','), '') AS grant
 FROM 
     metadata m

@@ -19,5 +19,4 @@ type Metadata struct {
 	Grant    []string   `json:"grant"`
 	JSON     JSONString `json:"json"`
 	FileSize int64      `json:"file-size"`
-	URL      string     `json:"url"`
 }

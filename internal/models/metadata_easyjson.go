@@ -165,8 +165,6 @@ func easyjsonBa0ee0e3DecodeGithubComFlutterDizasterFileServerInternalModels1(in 
 			(out.JSON).UnmarshalEasyJSON(in)
 		case "file-size":
 			out.FileSize = int64(in.Int64())
-		case "url":
-			out.URL = string(in.String())
 		default:
 			in.SkipRecursive()
 		}
@@ -285,16 +283,6 @@ func easyjsonBa0ee0e3EncodeGithubComFlutterDizasterFileServerInternalModels1(out
 			out.RawString(prefix)
 		}
 		out.Int64(int64(in.FileSize))
-	}
-	if in.URL != "" {
-		const prefix string = ",\"url\":"
-		if first {
-			first = false
-			out.RawString(prefix[1:])
-		} else {
-			out.RawString(prefix)
-		}
-		out.String(string(in.URL))
 	}
 	out.RawByte('}')
 }

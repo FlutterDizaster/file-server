@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (p *PostgresRepository) UploadMetadata(ctx context.Context, meta models.Metadata) error {
+func (p PostgresRepository) UploadMetadata(ctx context.Context, meta models.Metadata) error {
 	// Start transaction
 	tx, err := p.pool.Begin(ctx)
 	if err != nil {
@@ -30,7 +30,6 @@ func (p *PostgresRepository) UploadMetadata(ctx context.Context, meta models.Met
 		meta.OwnerID,
 		meta.JSON,
 		meta.FileSize,
-		meta.URL,
 	)
 
 	var id uuid.UUID
@@ -60,7 +59,7 @@ func (p *PostgresRepository) UploadMetadata(ctx context.Context, meta models.Met
 	return nil
 }
 
-func (p *PostgresRepository) GetMetadataByUserID(
+func (p PostgresRepository) GetMetadataByUserID(
 	ctx context.Context,
 	userID uuid.UUID,
 ) ([]models.Metadata, error) {
@@ -92,7 +91,6 @@ func (p *PostgresRepository) GetMetadataByUserID(
 			&meta.OwnerID,
 			&meta.JSON,
 			&meta.FileSize,
-			&meta.URL,
 			&grantStr,
 		)
 		if err != nil {
@@ -109,7 +107,7 @@ func (p *PostgresRepository) GetMetadataByUserID(
 	return metaList, nil
 }
 
-func (p *PostgresRepository) DeleteMetadata(ctx context.Context, id, userID uuid.UUID) error {
+func (p PostgresRepository) DeleteMetadata(ctx context.Context, id, userID uuid.UUID) error {
 	_, err := p.pool.Exec(ctx, queryDeleteMetadata, id, userID)
 	return err
 }

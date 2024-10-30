@@ -70,7 +70,7 @@ func (p *PostgresRepository) connect(ctx context.Context) error {
 	return nil
 }
 
-func (p *PostgresRepository) runMigrations(ctx context.Context) error {
+func (p PostgresRepository) runMigrations(ctx context.Context) error {
 	if p.migrationsPath == "" {
 		slog.Info("Skipping migrations")
 		return nil

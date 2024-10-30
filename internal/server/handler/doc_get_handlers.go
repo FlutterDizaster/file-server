@@ -94,6 +94,7 @@ func (h Handler) serveBinaryFileHandler(
 		h.responseWithError(w, r, err, "Error while getting file")
 		return
 	}
+	defer file.Close()
 
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Disposition", "attachment; filename="+meta.Name)

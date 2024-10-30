@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx"
 )
 
-func (p *PostgresRepository) AddUser(
+func (p PostgresRepository) AddUser(
 	ctx context.Context,
 	login, passHash string,
 ) (uuid.UUID, error) {
@@ -33,7 +33,7 @@ func (p *PostgresRepository) AddUser(
 	return id, nil
 }
 
-func (p *PostgresRepository) GetUserByLogin(
+func (p PostgresRepository) GetUserByLogin(
 	ctx context.Context,
 	login string,
 ) (models.User, error) {
