@@ -11,35 +11,82 @@ import (
 	"github.com/google/uuid"
 )
 
+// DocumentController used to upload, download and delete documents.
 type FileRepository interface {
-	UploadFile(ctx context.Context, file io.Reader, fileSize int64) error
+	// UploadFile upload file to repository.
+	// Returns error if upload failed.
+	UploadFile(ctx context.Context, file io.Reader, meta models.Metadata) error
+
+	// GetFile get file from repository.
+	// Returns error if get failed.
+	// Returns io.ReadSeekCloser if get was successful.
 	GetFile(ctx context.Context, meta models.Metadata) (io.ReadSeekCloser, error)
+
+	// DeleteFile delete file from repository.
+	// Returns error if delete failed.
 	DeleteFile(ctx context.Context, id string) error
 }
 
+// MetadataRepository used to upload, download and delete metadata.
 type MetadataRepository interface {
-	UploadMetadata(ctx context.Context, meta models.Metadata) error
+	// UploadMetadata upload metadata to repository.
+	// Returns error if upload failed.
+	// Returns file id if upload was successful.
+	UploadMetadata(ctx context.Context, meta models.Metadata) (uuid.UUID, error)
+
+	// GetMetadataByUserID get metadata from repository.
+	// Returns error if get failed.
+	// Returns []models.Metadata if get was successful.
 	GetMetadataByUserID(ctx context.Context, userID uuid.UUID) ([]models.Metadata, error)
+
+	// DeleteMetadata delete metadata from repository.
+	// Returns error if delete failed.
 	DeleteMetadata(ctx context.Context, id, userID uuid.UUID) error
 }
 
+// UserRepository used to get user by login.
 type UserRepository interface {
+	// GetUserByLogin get user from repository.
+	// Returns error if get failed.
+	// Returns models.User if get was successful.
 	GetUserByLogin(ctx context.Context, login string) (models.User, error)
 }
 
+// MetadataCache used to cache metadata.
 type MetadataCache interface {
+	// InvalidateUserCache invalidate user cache.
+	// Returns error if invalidate failed.
 	InvalidateUserCache(ctx context.Context, id uuid.UUID) error
+
+	// SaveUserCache save user cache.
+	// Returns error if save failed.
 	SaveUserCache(ctx context.Context, id uuid.UUID, meta []models.Metadata) error
+
+	// GetUserCache get user cache.
+	// Returns error if get failed.
+	// Returns []models.Metadata if get was successful.
 	GetUserCache(ctx context.Context, id uuid.UUID) ([]models.Metadata, error)
 }
 
+// Settings used to create DocumentsController.
+// Settings must be provided to New function.
+// All fields are required and cant be nil.
 type Settings struct {
+	// FileRepo used to upload, download and delete files.
 	FileRepo FileRepository
+
+	// MetaRepo used to upload, download and delete metadata.
 	MetaRepo MetadataRepository
+
+	// UserRepo used to get user by login.
 	UserRepo UserRepository
-	Cache    MetadataCache
+
+	// Cache used to cache metadata.
+	Cache MetadataCache
 }
 
+// DocumentsController used to upload, download and delete documents.
+// Must be initialized with New function.
 type DocumentsController struct {
 	fileRepo FileRepository
 	metaRepo MetadataRepository
@@ -47,6 +94,9 @@ type DocumentsController struct {
 	cache    MetadataCache
 }
 
+// New creates new DocumentsController.
+// Returns pointer to DocumentsController.
+// Accepts Settings as argument.
 func New(settings Settings) *DocumentsController {
 	ctrl := &DocumentsController{
 		fileRepo: settings.FileRepo,
@@ -58,6 +108,11 @@ func New(settings Settings) *DocumentsController {
 	return ctrl
 }
 
+// UploadDocument upload document to repository.
+// Returns error if upload failed.
+// Returns nil if upload was successful.
+// If meta.File is true, file cant be nil.
+// If meta.File is false, meta.JSON must be provided.
 func (c *DocumentsController) UploadDocument(
 	ctx context.Context,
 	meta models.Metadata,
@@ -68,24 +123,34 @@ func (c *DocumentsController) UploadDocument(
 		return err
 	}
 
+	// Save metadata to repository
+	id, err := c.metaRepo.UploadMetadata(ctx, meta)
+	if err != nil {
+		return err
+	}
+
+	meta.ID = &id
+
 	// If file is binary then upload it to repository
 	if meta.File {
 		// Upload file to repository
-		err := c.fileRepo.UploadFile(ctx, file, meta.FileSize)
+		err = c.fileRepo.UploadFile(ctx, file, meta)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Save metadata to repository
-	err := c.metaRepo.UploadMetadata(ctx, meta)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
+// GetFilesInfo returns list of documents for given user.
+// If req.Login is empty, userID will be used to find files info.
+// If req.Login is not empty then it will be used to find user ID.
+// If req.Key and req.Value are not empty then they will be used to filter documents.
+// If req.Limit or req.Offset are not zero then they will be used to limit and offset documents.
+// If cache is empty then it will be filled with data from repository.
+// Returns error if get failed.
+// Returns []models.Metadata if get was successful.
 func (c *DocumentsController) GetFilesInfo(
 	ctx context.Context,
 	userID uuid.UUID,
@@ -134,6 +199,14 @@ func (c *DocumentsController) GetFilesInfo(
 	return metadata, nil
 }
 
+// GetFileInfo get metadata for given document id.
+// First try to get data from cache.
+// If cache is empty then get data from repository.
+// Save data to cache.
+// Create filter with id eq docID.
+// Filter metadata.
+// Return filtered data.
+// If filtered data is empty then return ErrNotFound.
 func (c *DocumentsController) GetFileInfo(
 	ctx context.Context,
 	docID, userID uuid.UUID,
@@ -175,6 +248,9 @@ func (c *DocumentsController) GetFileInfo(
 	return models.Metadata{}, apperrors.ErrNotFound
 }
 
+// GetFile get file from repository.
+// Returns error if get failed.
+// Returns io.ReadSeekCloser if get was successful.
 func (c *DocumentsController) GetFile(
 	ctx context.Context,
 	meta models.Metadata,
@@ -182,6 +258,9 @@ func (c *DocumentsController) GetFile(
 	return c.fileRepo.GetFile(ctx, meta)
 }
 
+// DeleteFile delete file and its metadata from repository.
+// Returns error if delete failed.
+// Returns nil if delete was successful.
 func (c *DocumentsController) DeleteFile(ctx context.Context, id, userID uuid.UUID) error {
 	// Invalidate user cache
 	if err := c.cache.InvalidateUserCache(ctx, userID); err != nil {

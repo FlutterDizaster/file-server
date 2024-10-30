@@ -17,12 +17,35 @@ const (
 	dateFilterModeBetween
 )
 
+// DateFilter used to filter documents by date.
+// Must be initialized with NewDateFilter function.
+//
+// Value formats:
+//
+//   - "<date>" : after date.
+//   - "<date>" : before date.
+//   - "=<date>" : equal (exact date).
+//   - "<date>~<date>" : between dates.
+//
+// Date format is "2006-01-02 15:04:05".
 type DateFilter struct {
 	date    time.Time
 	endDate time.Time
 	mode    dateFilterMode
 }
 
+// NewDateFilter creates new DateFilter instance.
+//
+// value format:
+//
+//   - "<date>" : after date.
+//   - "<date>" : before date.
+//   - "=<date>" : equal (exact date).
+//   - "<date>~<date>" : between dates.
+//
+// Date format is "2006-01-02 15:04:05".
+//
+// Returns ErrInvalidFilterValue if value is invalid.
 func NewDateFilter(value string) (Filter, error) {
 	f := &DateFilter{}
 
@@ -34,6 +57,11 @@ func NewDateFilter(value string) (Filter, error) {
 	return f, nil
 }
 
+// Apply checks if given metadata date matches filter value.
+//
+// Returns true if filter matches, false otherwise.
+//
+// If metadata date is invalid, returns false.
 func (f *DateFilter) Apply(data models.Metadata) bool {
 	date, err := time.Parse(time.DateTime, data.Created)
 	if err != nil {

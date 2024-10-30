@@ -14,8 +14,6 @@ import (
 type serveFileStrategy func(http.ResponseWriter, *http.Request, models.Metadata)
 
 func (h Handler) docGetHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: Можно вынести в структуру Handler, чтобы не создавать каждый раз заново.
-	// Оставил пока тут для наглядности.
 	strategyMap := map[bool]serveFileStrategy{
 		true:  h.serveBinaryFileHandler,
 		false: h.serveJSONFileHandler,

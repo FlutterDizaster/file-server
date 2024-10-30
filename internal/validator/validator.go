@@ -18,10 +18,15 @@ const (
 	alphabetSymbol    = "!@#$%^&*()_+-=[]{};:'\",.<>/?|`~"
 )
 
+// Validator used to validate credentials.
+// Must be created with New function.
 type Validator struct {
 	adminToken string
 }
 
+// New creates a new Validator instance.
+// Requires a non-empty admin token.
+// Returns a pointer to the Validator and an error if the token is empty.
 func New(token string) (*Validator, error) {
 	if token == "" {
 		return nil, errors.New("empty admin token")
@@ -126,6 +131,11 @@ func (v *Validator) validatePassword(pass string) error {
 	return nil
 }
 
+// ValidateCredentials validates models.Credentials.
+// It checks if token is valid, login
+// and password is valid according to the rules.
+// If any of the checks fail, it returns an error.
+// Otherwise, it returns nil.
 func (v *Validator) ValidateCredentials(credentials models.Credentials) error {
 	if err := v.validateToken(credentials.Token); err != nil {
 		return err

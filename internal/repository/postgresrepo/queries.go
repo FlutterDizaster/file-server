@@ -27,14 +27,14 @@ LEFT JOIN
 LEFT JOIN 
     users u ON ma.user_id = u.id
 WHERE 
-    m.id = $1
+    m.id = $1 AND m.deleted = false
 GROUP BY 
     m.id, m.name, m.mime, m.is_file, m.public, m.created
 ORDER BY 
     m.name ASC, 
     m.created DESC;
 `
-	queryDeleteMetadata = `DELETE FROM metadata WHERE id = $1 AND owner_id = $2`
+	queryDeleteMetadata = `UPDATE metadata SET deleted = true WHERE id = $1 AND owner_id = $2`
 
 	// Metadata Access queries.
 	queryGrantMetadataAcsess = `INSERT INTO meta_access (meta_id, user_id)

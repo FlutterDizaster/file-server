@@ -8,6 +8,7 @@ import (
 	docctrl "github.com/FlutterDizaster/file-server/internal/controllers/document"
 	userctrl "github.com/FlutterDizaster/file-server/internal/controllers/user"
 	jwtresolver "github.com/FlutterDizaster/file-server/internal/jwt-resolver"
+	"github.com/FlutterDizaster/file-server/internal/migrator"
 	"github.com/FlutterDizaster/file-server/internal/repository/miniorepo"
 	"github.com/FlutterDizaster/file-server/internal/repository/postgresrepo"
 	"github.com/FlutterDizaster/file-server/internal/repository/redisrepo"
@@ -18,38 +19,42 @@ import (
 )
 
 const (
+	// shutdownMaxTime is the maximum time allowed to gracefully shutdown the server.
 	shutdownMaxTime = 5 * time.Second
 )
 
+// Service represents the application service.
 type Service interface {
 	Start(ctx context.Context) error
 }
 
 //nolint:lll // struct tags too long
 type Settings struct {
-	PostgresConnectionString string `desc:"postgres connection string"                  env:"DATABASE_DSN"                 name:"database-dsn"                 short:"d"`
-	PostgresMigrationsPath   string `desc:"postgres migrations path"                    env:"DATABASE_MIGRATIONS_PATH"     name:"database-migrations-path"     short:"m"`
-	RedisConnectionString    string `desc:"redis connection string"                     env:"REDIS_DSN"                    name:"redis-DSN"                    short:"r"`
-	RedisCacheTTL            string `desc:"redis cache ttl, default 24h"                env:"REDIS_CACHE_TTL"              name:"redis-cache-ttl"              short:"t" default:"24h"`
-	MinioEndpoint            string `desc:"minio endpoint"                              env:"MINIO_ENDPOINT"               name:"minio-endpoint"               short:"e"`
-	MinioAccessKey           string `desc:"minio access key"                            env:"MINIO_ACCESS_KEY"             name:"minio-access-key"             short:"a"`
-	MinioSecretKey           string `desc:"minio secret key"                            env:"MINIO_SECRET_KEY"             name:"minio-secret-key"             short:"s"`
-	MinioBucket              string `desc:"minio bucket"                                env:"MINIO_BUCKET"                 name:"minio-bucket"                 short:"b"`
-	MinioUseSSL              bool   `desc:"minio use ssl"                               env:"MINIO_USE_SSL"                name:"minio-use-ssl"                short:"u"`
-	AdminToken               string `desc:"admin token"                                 env:"ADMIN_TOKEN"                  name:"admin-token"`
-	JWTSecret                string `desc:"jwt secret"                                  env:"JWT_SECRET"                   name:"jwt-secret"                   short:"j"`
-	JWTIssuer                string `desc:"jwt issuer, default file-server"             env:"JWT_ISSUER"                   name:"jwt-issuer"                             default:"file-server"`
-	JWTTTL                   string `desc:"jwt ttl, default 24h"                        env:"JWT_TTL"                      name:"jwt-ttl"                                default:"24h"`
-	HTTPAddr                 string `desc:"http address, default localhost"             env:"HTTP_ADDR"                    name:"http-addr"                    short:"a" default:"localhost"`
-	HTTPPort                 string `desc:"http port, default 8080"                     env:"HTTP_PORT"                    name:"http-port"                    short:"p" default:"8080"`
-	HandlerMaxUploadFileSize int64  `desc:"handler max upload file size, default 200Mb" env:"HANDLER_MAX_UPLOAD_FILE_SIZE" name:"handler-max-upload-file-size"           default:"209715200"`
+	PostgresConnectionString string `desc:"postgres connection string" env:"DATABASE_DSN"       name:"database-dsn"       short:"d"`
+	PostgresMigrationsPath   string `desc:"postgres migrations path"   env:"DB_MIGRATIONS_PATH" name:"db-migrations-path" short:"m"`
+
+	RedisConnectionString string `desc:"redis connection string"      env:"REDIS_DSN"       name:"redis-DSN"       short:"r"`
+	RedisCacheTTL         string `desc:"redis cache ttl, default 24h" env:"REDIS_CACHE_TTL" name:"redis-cache-ttl" short:"t" default:"24h"`
+
+	MinioEndpoint  string `desc:"minio endpoint"   env:"MINIO_ENDPOINT"   name:"minio-endpoint"   short:"e"`
+	MinioAccessKey string `desc:"minio access key" env:"MINIO_ACCESS_KEY" name:"minio-access-key" short:"a"`
+	MinioSecretKey string `desc:"minio secret key" env:"MINIO_SECRET_KEY" name:"minio-secret-key" short:"s"`
+	MinioBucket    string `desc:"minio bucket"     env:"MINIO_BUCKET"     name:"minio-bucket"     short:"b"`
+	MinioUseSSL    bool   `desc:"minio use ssl"    env:"MINIO_USE_SSL"    name:"minio-use-ssl"    short:"u"`
+
+	AdminToken string `desc:"admin token" env:"ADMIN_TOKEN" name:"admin-token"`
+
+	JWTSecret string `desc:"jwt secret"                      env:"JWT_SECRET" name:"jwt-secret" short:"j"`
+	JWTIssuer string `desc:"jwt issuer, default file-server" env:"JWT_ISSUER" name:"jwt-issuer"           default:"file-server"`
+	JWTTTL    string `desc:"jwt ttl, default 24h"            env:"JWT_TTL"    name:"jwt-ttl"              default:"24h"`
+
+	HTTPAddr                 string `desc:"http address, default localhost"             env:"HTTP_ADDR"            name:"http-addr"            short:"a" default:"localhost"`
+	HTTPPort                 string `desc:"http port, default 8080"                     env:"HTTP_PORT"            name:"http-port"            short:"p" default:"8080"`
+	HandlerMaxUploadFileSize int64  `desc:"handler max upload file size, default 200Mb" env:"MAX_UPLOAD_FILE_SIZE" name:"max-upload-file-size"           default:"209715200"`
 }
 
-type Application struct {
-	service Service
-}
-
-func New(ctx context.Context) (*Application, error) {
+// New creates a new application service that can be started with Start method.
+func New(ctx context.Context) (Service, error) {
 	// Load config
 	var settings Settings
 	err := configloader.LoadConfig(&settings)
@@ -57,82 +62,79 @@ func New(ctx context.Context) (*Application, error) {
 		return nil, err
 	}
 
-	app := &Application{}
-
-	// Create repositories
-	postgresRepo, err := app.createPostgresRepository(ctx, settings)
+	// Run migrations
+	err = migrator.RunMigrations(
+		ctx,
+		settings.PostgresConnectionString,
+		settings.PostgresMigrationsPath,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	redisRepo, err := app.createRedisRepository(ctx, settings)
+	// new repositories
+	postgresRepo, err := newPostgresRepository(ctx, settings)
 	if err != nil {
 		return nil, err
 	}
 
-	minioRepo, err := app.createMinioRepository(ctx, settings)
+	redisRepo, err := newRedisRepository(ctx, settings)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create resolver and validator
-	resolver, err := app.createJWTResolver(settings)
+	minioRepo, err := newMinioRepository(ctx, settings)
 	if err != nil {
 		return nil, err
 	}
 
-	validator, err := app.createValidator(settings)
+	// new resolver and validator
+	resolver, err := newJWTResolver(settings)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create controllers
-	documentsController := app.createDocumentsController(
+	validator, err := newValidator(settings)
+	if err != nil {
+		return nil, err
+	}
+
+	// new controllers
+	documentsController := newDocumentsController(
 		minioRepo,
 		postgresRepo,
 		postgresRepo,
 		redisRepo,
 	)
 
-	userController := app.createUserController(
+	userController := newUserController(
 		postgresRepo,
 		resolver,
 		validator,
 	)
 
-	// Create Handler
-	handler := app.createHandler(
+	// new Handler
+	handler := newHandler(
 		resolver,
 		userController,
 		documentsController,
 		settings.HandlerMaxUploadFileSize,
 	)
 
-	// Create server
-	server := app.createServer(settings, handler)
+	// new server
+	server := newServer(settings, handler)
 
-	app.service = server
-
-	return app, nil
+	return server, nil
 }
 
-func (a Application) Start(ctx context.Context) error {
-	return a.service.Start(ctx)
-}
-
-func (a Application) createPostgresRepository(
+func newPostgresRepository(
 	ctx context.Context,
 	settings Settings,
 ) (*postgresrepo.PostgresRepository, error) {
-	repoSettings := postgresrepo.Settings{
-		ConnectionString: settings.PostgresConnectionString,
-		MigrationsPath:   settings.PostgresMigrationsPath,
-	}
-
-	return postgresrepo.New(ctx, repoSettings)
+	return postgresrepo.New(ctx, settings.PostgresConnectionString)
 }
 
-func (a Application) createRedisRepository(
+func newRedisRepository(
 	ctx context.Context,
 	settings Settings,
 ) (*redisrepo.RedisRepository, error) {
@@ -148,7 +150,7 @@ func (a Application) createRedisRepository(
 	return redisrepo.New(ctx, repoSettings)
 }
 
-func (a Application) createMinioRepository(
+func newMinioRepository(
 	ctx context.Context,
 	settings Settings,
 ) (*miniorepo.MinioRepository, error) {
@@ -163,7 +165,7 @@ func (a Application) createMinioRepository(
 	return miniorepo.New(ctx, repoSettings)
 }
 
-func (a Application) createJWTResolver(settings Settings) (*jwtresolver.JWTResolver, error) {
+func newJWTResolver(settings Settings) (*jwtresolver.JWTResolver, error) {
 	ttl, err := time.ParseDuration(settings.JWTTTL)
 	if err != nil {
 		return nil, err
@@ -177,11 +179,11 @@ func (a Application) createJWTResolver(settings Settings) (*jwtresolver.JWTResol
 	return jwtresolver.New(jwtSettings), nil
 }
 
-func (a Application) createValidator(settings Settings) (*validator.Validator, error) {
+func newValidator(settings Settings) (*validator.Validator, error) {
 	return validator.New(settings.AdminToken)
 }
 
-func (a Application) createDocumentsController(
+func newDocumentsController(
 	fileRepo docctrl.FileRepository,
 	userRepo docctrl.UserRepository,
 	metaRepo docctrl.MetadataRepository,
@@ -197,7 +199,7 @@ func (a Application) createDocumentsController(
 	return docctrl.New(controllerSettings)
 }
 
-func (a Application) createUserController(
+func newUserController(
 	userRepo userctrl.UserRepository,
 	resolver *jwtresolver.JWTResolver,
 	validator *validator.Validator,
@@ -211,7 +213,7 @@ func (a Application) createUserController(
 	return userctrl.New(controllerSettings)
 }
 
-func (a Application) createHandler(
+func newHandler(
 	resolver *jwtresolver.JWTResolver,
 	userCtrl handler.UserController,
 	docCtrl handler.DocumentsController,
@@ -227,7 +229,7 @@ func (a Application) createHandler(
 	return handler.New(handlerSettings)
 }
 
-func (a Application) createServer(settings Settings, handler http.Handler) *server.Server {
+func newServer(settings Settings, handler http.Handler) *server.Server {
 	serverSettings := server.Settings{
 		Addr:    settings.HTTPAddr,
 		Port:    settings.HTTPPort,

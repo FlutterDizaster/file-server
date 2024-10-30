@@ -10,6 +10,9 @@ import (
 	"github.com/jackc/pgx"
 )
 
+// AddUser add user to repository.
+// Returns uuid of added user or error if user creation failed.
+// Login must be unique, otherwise ErrUserAlreadyExists will be returned.
 func (p PostgresRepository) AddUser(
 	ctx context.Context,
 	login, passHash string,
@@ -33,6 +36,11 @@ func (p PostgresRepository) AddUser(
 	return id, nil
 }
 
+// GetUserByLogin retrieves a user from the PostgreSQL database using the given login.
+// It executes a query to fetch the user's ID, login, and password hash.
+// Returns a models.User if the query is successful.
+// Returns ErrWrongCredentials if no user is found with the specified login.
+// Returns an error for any other query failure.
 func (p PostgresRepository) GetUserByLogin(
 	ctx context.Context,
 	login string,

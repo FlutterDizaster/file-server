@@ -18,10 +18,26 @@ const (
 	FilterKeyID     FilterKey = "id"
 )
 
+// Filter used to filter metadata.
 type Filter interface {
 	Apply(data models.Metadata) bool
 }
 
+// QuerryFilter creates new Filter instance based on given key and value.
+//
+// key:
+//   - "owner" : filter by owner id.
+//   - "file" : filter by file status.
+//   - "name" : filter by name.
+//   - "mime" : filter by mime type.
+//   - "public" : filter by public status.
+//   - "created" : filter by creation date.
+//   - "grant" : filter by user login.
+//   - "id" : filter by document id.
+//
+// value format depends on filter type.
+//
+// Returns ErrUnknownFilter if key is unknown.
 func QuerryFilter(key, value string) (Filter, error) {
 	switch FilterKey(key) {
 	case FilterKeyOwner:

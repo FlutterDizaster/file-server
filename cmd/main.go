@@ -15,15 +15,17 @@ func main() {
 }
 
 func mainWithCode() int {
+	// TODO: init slog
+
 	// Gracefull shutdown with SIGINT and SIGTERM
-	ctx, cancle := signal.NotifyContext(
+	ctx, cancel := signal.NotifyContext(
 		context.Background(),
 		os.Interrupt,
 		syscall.SIGINT,
 		syscall.SIGTERM,
 		syscall.SIGQUIT,
 	)
-	defer cancle()
+	defer cancel()
 
 	app, err := application.New(ctx)
 	if err != nil {

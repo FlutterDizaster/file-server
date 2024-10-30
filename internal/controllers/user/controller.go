@@ -15,23 +15,35 @@ const (
 	subject = "file-server"
 )
 
+// UserRepository used to get user by login and add user.
 type UserRepository interface {
+	// AddUser add user to repository.
 	AddUser(ctx context.Context, login, passHash string) (uuid.UUID, error)
+
+	// GetUserByLogin get user from repository.
 	GetUserByLogin(ctx context.Context, login string) (models.User, error)
 }
 
+// Settings used to create UserController.
+// Settings must be provided to New function.
+// All fields are required and cant be nil.
 type Settings struct {
 	UserRepo  UserRepository
 	Resolver  *jwtresolver.JWTResolver
 	Validator *validator.Validator
 }
 
+// UserController used to register and login users.
+// Must be created with New function.
 type UserController struct {
 	userRepo  UserRepository
 	resolver  *jwtresolver.JWTResolver
 	validator *validator.Validator
 }
 
+// New creates new UserController.
+// Returns pointer to UserController.
+// Accepts Settings as argument.
 func New(settings Settings) *UserController {
 	ctrl := &UserController{
 		userRepo:  settings.UserRepo,
@@ -42,6 +54,9 @@ func New(settings Settings) *UserController {
 	return ctrl
 }
 
+// Register registers new user and returns JWT token with user ID.
+// Returns error if registration failed.
+// Must be called with valid credentials with non-empty login, password and token.
 func (c *UserController) Register(
 	ctx context.Context,
 	credentials models.Credentials,
@@ -71,6 +86,8 @@ func (c *UserController) Register(
 	return token, nil
 }
 
+// Login returns JWT token with user ID or error if login failed.
+// Must be called with valid credentials with non-empty login and password.
 func (c *UserController) Login(
 	ctx context.Context,
 	credentials models.Credentials,

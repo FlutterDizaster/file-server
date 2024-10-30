@@ -10,6 +10,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// Settings used to create Server.
+// Settings must be provided to New function.
+// All fields are required and cant be nil.
 type Settings struct {
 	Addr string
 	Port string
@@ -19,6 +22,10 @@ type Settings struct {
 	ShutdownMaxTime time.Duration
 }
 
+// Server is a http server.
+// Can be started with Start method.
+// Gracefully stops when context is canceled.
+// Must be initialized with New function.
 type Server struct {
 	server          *http.Server
 	addr            string
@@ -26,6 +33,9 @@ type Server struct {
 	shutdownMaxTime time.Duration
 }
 
+// New creates new Server instance.
+// It takes Settings as argument and returns pointer to Server.
+// All fields of Settings are required and cant be nil.
 func New(settings Settings) *Server {
 	a := &Server{
 		addr: settings.Addr,
@@ -43,6 +53,10 @@ func New(settings Settings) *Server {
 	return a
 }
 
+// Start starts the server and blocks until context is canceled.
+// It returns error if server cant be started.
+// Server is gracefully stopped when context is canceled.
+// If error occurs on start, shutdown is skipped.
 func (a *Server) Start(ctx context.Context) error {
 	eg, egCtx := errgroup.WithContext(ctx)
 
